@@ -340,20 +340,35 @@ public:
 		meta = (ToolTip = "EN: The yaw offset computed from the skeleton that makes the bird face the actor forward axis. Debug helper.\nRU: Смещение по yaw, вычисленное по скелету, чтобы птица смотрела по оси «вперёд» актёра. Вспомогательная функция."))
 	float GetComputedMeshYawOffset() const;
 
-	/** Called when the crow notices the player (before the take-off). / Вызывается, когда ворона замечает игрока. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Crow",
-		meta = (ToolTip = "EN: Blueprint event fired when the bird is scared, before the take-off.\nRU: Событие блюпринта, вызывается когда птица испугалась, до взлёта."))
+	/** True once the bird has flown away at least once. Not cleared by Reset To Idle. / True, если птица уже хотя бы раз улетела. Reset To Idle его не сбрасывает. */
+	UPROPERTY(BlueprintReadOnly, Category = "Crow|State",
+		meta = (ToolTip = "EN: True once the bird has flown away at least once. It stays true after Reset To Idle, so 'the bird is gone' logic is easy to hook.\nRU: True, если птица уже хотя бы раз улетела. Остаётся true после Reset To Idle, чтобы удобно было вешать логику «птица улетела»."))
+	bool bHasFled = false;
+
+	/** Has the bird already flown away at least once. / Птица уже улетала хотя бы раз. */
+	UFUNCTION(BlueprintPure, Category = "Crow",
+		meta = (ToolTip = "EN: True when the bird has already flown away at least once. Read it from any Blueprint.\nRU: True, когда птица уже улетала хотя бы раз. Можно читать из любого блюпринта."))
+	bool HasFled() const { return bHasFled; }
+
+	/** Scared. Can be overridden in Blueprint (right click → Add Call to Parent Function). / Испуг. Переопределяется в блюпринте. */
+	UFUNCTION(BlueprintNativeEvent, Category = "Crow",
+		meta = (ToolTip = "EN: Fired when the bird is scared, before the take-off. Override it in the Blueprint; call the parent function to also run the C++ default.\nRU: Срабатывает, когда птица испугалась, до взлёта. Переопределяйте в блюпринте; вызовите родительскую функцию, чтобы выполнился и код C++."))
 	void OnCrowAlarmed(AActor* InstigatorActor);
 
-	/** Called when the bird leaves the perch. / Вызывается, когда птица покидает присаду. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Crow",
-		meta = (ToolTip = "EN: Blueprint event fired at take-off.\nRU: Событие блюпринта, вызывается при взлёте."))
+	/** Bird leaves the perch. Can be overridden in Blueprint. / Птица покидает присаду. Переопределяется в блюпринте. */
+	UFUNCTION(BlueprintNativeEvent, Category = "Crow",
+		meta = (ToolTip = "EN: Fired at take-off. Override it in the Blueprint; call the parent function to also run the C++ default.\nRU: Срабатывает при взлёте. Переопределяйте в блюпринте; вызовите родительскую функцию, чтобы выполнился и код C++."))
 	void OnCrowTakeOff();
 
-	/** Called when the take-off animation switches to the flight loop. / Вызывается при переходе на анимацию полёта. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Crow",
-		meta = (ToolTip = "EN: Blueprint event fired when the take-off animation switches to the flight loop.\nRU: Событие блюпринта, вызывается при переходе с анимации взлёта на цикл полёта."))
+	/** Take-off animation switches to the flight loop. Can be overridden in Blueprint. / Переход на анимацию полёта. Переопределяется в блюпринте. */
+	UFUNCTION(BlueprintNativeEvent, Category = "Crow",
+		meta = (ToolTip = "EN: Fired when the take-off animation switches to the flight loop. Override it in the Blueprint; call the parent function to also run the C++ default.\nRU: Срабатывает при переходе с анимации взлёта на цикл полёта. Переопределяйте в блюпринте; вызовите родительскую функцию, чтобы выполнился и код C++."))
 	void OnCrowFlyAway();
+
+	/** The bird has flown away: fired at the end of every flight, before the actor is destroyed or hidden. / Птица улетела: срабатывает в конце полёта, до удаления или скрытия актёра. */
+	UFUNCTION(BlueprintNativeEvent, Category = "Crow",
+		meta = (ToolTip = "EN: Fired when the flight is over, before the actor is destroyed or hidden. This is the 'the bird has flown away' hook: spawn a reward, advance a quest, play a sound. It fires again if the bird is put back on the perch and flies away again; use Has Fled to check whether this is the first time. Override it in the Blueprint; call the parent function to also run the C++ default.\nRU: Срабатывает, когда полёт закончен, до удаления или скрытия актёра. Это хук «птица улетела»: выдать награду, продвинуть квест, проиграть звук. Сработает снова, если вернуть птицу на присаду и спугнуть повторно; чтобы понять, что это первый раз, используйте Has Fled. Переопределяйте в блюпринте; вызовите родительскую функцию, чтобы выполнился и код C++."))
+	void OnCrowFled();
 
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;

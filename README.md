@@ -152,7 +152,19 @@ Crow->GetDistanceToActivationTarget();
 Crow->GetComputedMeshYawOffset(); // вычисленный поворот меша (для отладки)
 ```
 
-События: `OnCrowAlarmed`, `OnCrowTakeOff`, `OnCrowFlyAway`, `OnTriggerFired`.
+### События и переопределение в блюпринте
+
+Все события вороны — `BlueprintNativeEvent`: у них есть пустая реализация в C++, а в блюпринте вы их **переопределяете** (правый клик по событию в графе → **Implement** либо оно уже есть в списке Events) и при необходимости вызываете базовый код через **Add Call to Parent Function**.
+
+| Событие | Когда |
+|---|---|
+| `OnCrowAlarmed(Instigator)` | птицу спугнули, до взлёта |
+| `OnCrowTakeOff()` | птица оторвалась от присады |
+| `OnCrowFlyAway()` | взлёт перешёл в цикл полёта |
+| `OnCrowFled()` | полёт закончен, до удаления или скрытия актёра — хук «птица улетела» |
+| `OnTriggerFired(Instigator)` | сработал `BP_CrowTrigger` |
+
+Если птица уже улетала, это можно проверить в любом месте графа: `Has Fled` (BlueprintPure) или переменная `bHasFled`. `Reset To Idle` её не сбрасывает, поэтому логика «птица уже улетала» срабатывает один раз за жизнь актёра. Сам `OnCrowFled` вызывается в конце каждого полёта — так сцена переигрывается, если ворону вернули на присаду.
 
 ### Описания полей
 
@@ -299,7 +311,19 @@ Crow->GetDistanceToActivationTarget();
 Crow->GetComputedMeshYawOffset(); // computed mesh yaw (debug helper)
 ```
 
-Events: `OnCrowAlarmed`, `OnCrowTakeOff`, `OnCrowFlyAway`, `OnTriggerFired`.
+### Events and overriding them in Blueprint
+
+Every crow event is a `BlueprintNativeEvent`: it has an empty C++ implementation and you **override** it in the Blueprint (right click the event in the graph → **Implement**, or pick it from the Events list) and optionally run the base code via **Add Call to Parent Function**.
+
+| Event | When |
+|---|---|
+| `OnCrowAlarmed(Instigator)` | the bird got scared, before take-off |
+| `OnCrowTakeOff()` | the bird left the perch |
+| `OnCrowFlyAway()` | take-off switched to the flight loop |
+| `OnCrowFled()` | the flight is over, before the actor is destroyed or hidden — the "the bird has flown away" hook |
+| `OnTriggerFired(Instigator)` | the `BP_CrowTrigger` fired |
+
+Whether the bird has ever flown away is readable anywhere in the graph: `Has Fled` (BlueprintPure) or the `bHasFled` variable. `Reset To Idle` does not clear it, so "the bird is gone" logic triggers once per actor lifetime. `OnCrowFled` itself fires at the end of every flight, so the scene replays correctly when the bird is put back on the perch.
 
 ### Property tooltips
 

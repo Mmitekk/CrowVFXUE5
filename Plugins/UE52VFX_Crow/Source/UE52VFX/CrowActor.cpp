@@ -316,6 +316,25 @@ void ACrowActor::HandleIdleCaw()
 	ScheduleNextIdleCaw();
 }
 
+// ---------------------------------------------------------------------------- blueprint events
+
+void ACrowActor::OnCrowAlarmed_Implementation(AActor* InstigatorActor)
+{
+	// Empty by default: override it in the Blueprint and call the parent function if needed.
+}
+
+void ACrowActor::OnCrowTakeOff_Implementation()
+{
+}
+
+void ACrowActor::OnCrowFlyAway_Implementation()
+{
+}
+
+void ACrowActor::OnCrowFled_Implementation()
+{
+}
+
 // ---------------------------------------------------------------------------- reaction
 
 void ACrowActor::TriggerFlee(AActor* InstigatorActor)
@@ -467,11 +486,21 @@ void ACrowActor::UpdateFlying(float DeltaSeconds)
 
 void ACrowActor::FinishFlight()
 {
+	if (State == ECrowState::Gone)
+	{
+		return;
+	}
+
 	State = ECrowState::Gone;
 	Velocity = FVector::ZeroVector;
 	SetActorTickEnabled(false);
 	GetWorldTimerManager().ClearTimer(IdleCawTimer);
 	StopAllSounds();
+
+	// Fired exactly once, while the actor still exists, so the Blueprint can react to
+	// "the bird has flown away" even when the actor is destroyed afterwards.
+	bHasFled = true;
+	OnCrowFled();
 
 	if (bDestroyAfterFlight)
 	{
