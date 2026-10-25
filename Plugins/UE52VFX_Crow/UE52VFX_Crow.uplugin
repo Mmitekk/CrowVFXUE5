@@ -1,0 +1,16 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "UE52VFX Crow & Snowman",
+  "Description": "Crow sitting on snowman + flight logic, blueprintable. Includes ACrowActor, ASnowmanActor, ACrowTrigger with editable parameters, sound cues and attenuation.",
+  "Category": "Gameplay",
+  "Tags": [],
+  "EnabledByDefault": true,
+  "DependsOn": [
+    "Core",
+    "CoreUObject",
+    "Engine",
+    "InputCore"
+  ]
+}
