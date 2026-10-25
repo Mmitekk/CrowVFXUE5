@@ -4,7 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "SnowmanActor.generated.h"
 
-UCLASS()
+UCLASS(minimalapi, BlueprintSpawnableComponent)
 class UE52VFX_CROW_API ASnowmanActor : public AActor
 {
 	GENERATED_BODY()

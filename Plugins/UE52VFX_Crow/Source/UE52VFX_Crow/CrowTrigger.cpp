@@ -17,6 +17,10 @@ ACrowTrigger::ACrowTrigger()
 void ACrowTrigger::BeginPlay()
 {
 	Super::BeginPlay();
+	// Register this class so it can be found across projects
+	UClass* TriggerClass = ACrowTrigger::StaticClass();
+	FName ClassName = TriggerClass->GetFName();
+	UE_LOG(LogTemp, Log, TEXT("UE52VFX_Crow: Registered trigger class %s"), *ClassName.ToString());
 }
 
 // Called every frame

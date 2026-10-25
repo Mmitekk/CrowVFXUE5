@@ -4,6 +4,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
+#include "Engine/World.h"
 
 ACrowActor::ACrowActor()
 {
@@ -42,6 +43,10 @@ void ACrowActor::BeginPlay()
 	{
 		// Could play idle animation here
 	}
+	// Register this class so it can be found across projects
+	UClass* CrowClass = ACrowActor::StaticClass();
+	FName ClassName = CrowClass->GetFName();
+	UE_LOG(LogTemp, Log, TEXT("UE52VFX_Crow: Registered class %s"), *ClassName.ToString());
 }
 
 // Called every frame

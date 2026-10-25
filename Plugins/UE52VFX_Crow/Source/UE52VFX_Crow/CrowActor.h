@@ -4,7 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "CrowActor.generated.h"
 
-UCLASS()
+UCLASS(minimalapi, BlueprintSpawnableComponent)
 class UE52VFX_CROW_API ACrowActor : public AActor
 {
 	GENERATED_BODY()

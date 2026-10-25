@@ -4,7 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "CrowTrigger.generated.h"
 
-UCLASS()
+UCLASS(minimalapi, BlueprintSpawnableComponent)
 class UE52VFX_CROW_API ACrowTrigger : public AActor
 {
 	GENERATED_BODY()
