@@ -49,6 +49,7 @@
 
 ```
 BP_Crow.uasset
+BP_CrowFlock.uasset
 BP_CrowTrigger.uasset
 BP_Snowman.uasset
 ATN_Crow.uasset
@@ -93,6 +94,39 @@ Demo/L_CrowDemo.umap
 - Сетка назначается в поле **Snowman Mesh** (плюс `Snowman Material`, `Mesh Location Offset`, `Mesh Rotation Offset`, `Snowman Scale`).
 - **`PerchPoint` теперь свободно перемещается.** Код никогда не перезаписывает его трансформ: двигайте его во вьюпорте Blueprint, в панели Details или в дереве компонентов у экземпляра на уровне. Точка сидения настраивается один раз и сохраняется.
 - `Align Crow To Perch` — ворона садится с поворотом присады.
+
+### Стая: `BP_CrowFlock` (`ACrowFlock`)
+
+Отдельный актёр, **никак не связанный со снеговиком**. При старте расставляет птиц вдоль сплайна и потом разгоняет их в разные стороны.
+
+| Компонент | Назначение |
+|---|---|
+| `Root` | корень |
+| `SpawnSpline` | линия спавна: двигайте точки — линия, дуга, круг |
+
+**Основные поля**
+
+| Поле | Что делает |
+|---|---|
+| `Crow Class` | класс птицы (в `BP_CrowFlock` уже стоит `BP_Crow`), у каждой свой набор аудиокомпонентов |
+| `Bird Count` | количество птиц; массив `Birds` подгоняется автоматически |
+| `Birds` | запись на птицу: `Flight Yaw` (направление в градусах), `Delay` (своя задержка), `bCaw` (с криком или молча), `Scale` (0 = общий) |
+| `Crow Scale` | общий масштаб птиц |
+| `Spline Placement Jitter` | случайный сдвиг вдоль сплайна, чтобы не сидели ровной линейкой |
+| `Mute Idle Caw` | не каркать, пока сидят (только на взлёте) |
+| `Scare Radius` | радиус, при входе игрока в который стая взлетает (0 = выкл) |
+| `Scare On Begin Play` + `Start Delay` | взлететь самим без игрока |
+| `Base Scare Delay` | общая задержка, прибавляется к `Delay` каждой птицы |
+| `Randomize Directions` + `Direction Spread` | случайный разброс направлений |
+
+**Функции и события**
+
+- `Scare All (Instigator)` — разогнать всех: каждой птице передаётся её направление, задержка и флаг крика.
+- `Respawn Flock` — удалить птиц и создать стаю заново (удобно для повторного теста).
+- `Spawn Birds` / `Get Spawned Bird Count`.
+- `On Flock Spawned` и `On Flock Scared` — `BlueprintNativeEvent`, переопределяются в блюпринте.
+
+Птицы создаются с выключенным собственным proximity-триггером (`Use Proximity Trigger = false`): взлётом управляет только стая.
 
 ### Звук: три независимые группы
 
@@ -177,6 +211,7 @@ Crow->GetComputedMeshYawOffset(); // вычисленный поворот ме�
 - Авто-выравнивание меша для `SK_Crow` даёт −89.99° (ровно −90°)
 - Демо-карта `L_CrowDemo` создана, содержит 8 актёров
 - У `BP_Snowman` осталось ровно три компонента: `Root`, `SnowmanMesh`, `PerchPoint`
+- `BP_CrowFlock` создан: 8 птиц расставляются по сплайну, у каждой свои `CrowAudio`/`AlarmAudio`/`FlightAudio`, свой proximity выключен; `Scare All` переводит птицу с нулевой задержкой в `Alarmed`, остальные ждут свои таймеры
 
 ---
 
@@ -219,6 +254,7 @@ The paths `/Game/VFX/Crow/...` and `/Game/AnimalVarietyPack/Crow/...` are baked 
 
 ```
 BP_Crow.uasset
+BP_CrowFlock.uasset
 BP_CrowTrigger.uasset
 BP_Snowman.uasset
 ATN_Crow.uasset
@@ -261,6 +297,39 @@ Open it and press **Play** — walk to the snowman: the crow caws, waits for the
 - Assign the mesh in **Snowman Mesh** (plus `Snowman Material`, `Mesh Location Offset`, `Mesh Rotation Offset`, `Snowman Scale`).
 - **`PerchPoint` is freely movable now.** The code never overwrites its transform: drag it in the Blueprint viewport, in the details panel or in the components tree of a placed actor. The perch position is set once and kept.
 - `Align Crow To Perch` makes the spawned crow copy the perch rotation.
+
+### Flock: `BP_CrowFlock` (`ACrowFlock`)
+
+A separate actor, **not tied to the snowman**. At Begin Play it places the birds along a spline and later sends them away in different directions.
+
+| Component | Purpose |
+|---|---|
+| `Root` | actor root |
+| `SpawnSpline` | spawn line: move the points to get a line, an arc or a circle |
+
+**Main settings**
+
+| Setting | What it does |
+|---|---|
+| `Crow Class` | bird class (`BP_CrowFlock` already points at `BP_Crow`), every bird keeps its own audio components |
+| `Bird Count` | number of birds; the `Birds` array is resized automatically |
+| `Birds` | one entry per bird: `Flight Yaw` (direction in degrees), `Delay` (own delay), `bCaw` (caw or silent), `Scale` (0 = flock scale) |
+| `Crow Scale` | shared scale of the birds |
+| `Spline Placement Jitter` | random offset along the spline so the birds are not a perfect row |
+| `Mute Idle Caw` | no cawing while perched, only at take-off |
+| `Scare Radius` | radius that scares the flock when the player enters it (0 = off) |
+| `Scare On Begin Play` + `Start Delay` | take off without the player |
+| `Base Scare Delay` | shared delay added to each bird `Delay` |
+| `Randomize Directions` + `Direction Spread` | random deviation of the directions |
+
+**Functions and events**
+
+- `Scare All (Instigator)` — sends every bird away with its own direction, delay and caw flag.
+- `Respawn Flock` — destroys the birds and spawns a fresh flock (handy for testing).
+- `Spawn Birds` / `Get Spawned Bird Count`.
+- `On Flock Spawned` and `On Flock Scared` — `BlueprintNativeEvent`, overridable in the Blueprint.
+
+Birds are spawned with their own proximity trigger disabled (`Use Proximity Trigger = false`): the flock alone decides when to take off.
 
 ### Audio: three independent groups
 
@@ -336,6 +405,7 @@ Every C++ property carries an English **and** Russian `ToolTip`, so the details 
 - Mesh auto-alignment for `SK_Crow` resolves to −89.99° (exactly −90°)
 - The demo level `L_CrowDemo` exists and holds 8 actors
 - `BP_Snowman` now has exactly three components: `Root`, `SnowmanMesh`, `PerchPoint`
+- `BP_CrowFlock` works: 8 birds placed along the spline, each with its own `CrowAudio`/`AlarmAudio`/`FlightAudio` and its proximity trigger disabled; `Scare All` puts the zero-delay bird into `Alarmed` while the rest wait for their timers
 
 ---
 

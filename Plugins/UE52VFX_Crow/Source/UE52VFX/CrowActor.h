@@ -320,6 +320,11 @@ public:
 		meta = (ToolTip = "EN: Scares the bird: it caws, waits Trigger Delay and flies away. Does nothing when the bird is already flying.\nRU: Пугает птицу: она каркает, ждёт Trigger Delay и улетает. Ничего не делает, если птица уже улетает."))
 	void TriggerFlee(AActor* InstigatorActor = nullptr);
 
+	/** Scare the bird into a specific world direction, optionally after a delay and silently. / Испугать ворону в заданном направлении, при желании с задержкой и без крика. */
+	UFUNCTION(BlueprintCallable, Category = "Crow",
+		meta = (ToolTip = "EN: Scares the bird and makes it fly exactly along Direction (world space), starting after Start Delay (0 or less = right now). bPlayAlarmCaw = false makes it take off silently. Used by the flock actor.\nRU: Пугает птицу и заставляет лететь точно по Direction (мировое направление), начиная через Start Delay (0 или меньше = сразу). bPlayAlarmCaw = false — взлёт без карканья. Используется актёром стаи."))
+	void ScareInDirection(AActor* InstigatorActor, FVector Direction, float StartDelay = -1.0f, bool bPlayAlarmCaw = true);
+
 	/** Put the bird back on its perch (useful for testing and for respawning). / Вернуть птицу на присаду (для тестов и респавна). */
 	UFUNCTION(BlueprintCallable, Category = "Crow",
 		meta = (ToolTip = "EN: Puts the bird back on its perch and restarts the idle behaviour. Use it to replay the scene without restarting the game.\nRU: Возвращает птицу на присаду и перезапускает поведение покоя. Удобно, чтобы проиграть сцену заново без перезапуска игры."))
@@ -399,6 +404,15 @@ private:
 
 	/** Who scared the bird (used for the escape direction). */
 	TWeakObjectPtr<AActor> AlarmInstigator;
+
+	/** Set by ScareInDirection: fly exactly there instead of away from the player. */
+	bool bHasFlightDirectionOverride = false;
+	FVector FlightDirectionOverride = FVector::ForwardVector;
+
+	/** Set by ScareInDirection: play the alarm caw or take off silently. */
+	bool bPlayAlarmSound = true;
+
+	FTimerHandle ScareDelayTimer;
 
 	FVector FlightDirection = FVector::ForwardVector;
 	FVector Velocity = FVector::ZeroVector;

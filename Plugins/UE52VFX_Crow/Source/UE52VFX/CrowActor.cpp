@@ -337,6 +337,36 @@ void ACrowActor::OnCrowFled_Implementation()
 
 // ---------------------------------------------------------------------------- reaction
 
+void ACrowActor::ScareInDirection(AActor* InstigatorActor, FVector Direction, float StartDelay, bool bPlayAlarmCaw)
+{
+	if (State != ECrowState::Idle)
+	{
+		return;
+	}
+
+	const FVector NormalizedDirection = Direction.GetSafeNormal();
+	bHasFlightDirectionOverride = !NormalizedDirection.IsNearlyZero();
+	FlightDirectionOverride = NormalizedDirection;
+	bPlayAlarmSound = bPlayAlarmCaw;
+
+	if (StartDelay <= 0.0f)
+	{
+		TriggerFlee(InstigatorActor);
+		return;
+	}
+
+	if (GetWorld() == nullptr)
+	{
+		return;
+	}
+
+	FTimerDelegate DelayedScare = FTimerDelegate::CreateWeakLambda(this, [this, InstigatorActor]()
+	{
+		TriggerFlee(InstigatorActor);
+	});
+	GetWorldTimerManager().SetTimer(ScareDelayTimer, DelayedScare, StartDelay, false);
+}
+
 void ACrowActor::TriggerFlee(AActor* InstigatorActor)
 {
 	if (State != ECrowState::Idle)
@@ -345,11 +375,15 @@ void ACrowActor::TriggerFlee(AActor* InstigatorActor)
 	}
 
 	GetWorldTimerManager().ClearTimer(IdleCawTimer);
+	GetWorldTimerManager().ClearTimer(ScareDelayTimer);
 
 	AlarmInstigator = InstigatorActor;
 	State = ECrowState::Alarmed;
 
-	PlayRandomSound(AlarmAudio, AlarmedSounds, AlarmVolume, AlarmAttenuation);
+	if (bPlayAlarmSound)
+	{
+		PlayRandomSound(AlarmAudio, AlarmedSounds, AlarmVolume, AlarmAttenuation);
+	}
 	OnCrowAlarmed(InstigatorActor);
 
 	if (TriggerDelay <= 0.0f)
@@ -400,9 +434,14 @@ void ACrowActor::EnterTakeOff()
 
 	PlayRandomSound(FlightAudio, TakeOffSounds, TakeOffVolume, TakeOffAttenuation);
 
-	// Escape direction: away from whoever scared the bird, with a bit of random spread.
+	// Escape direction: an explicit one from Scare In Direction, otherwise away from
+	// whoever scared the bird, with a bit of random spread.
 	FVector Direction = GetActorForwardVector();
-	if (bFlyAwayFromPlayer)
+	if (bHasFlightDirectionOverride)
+	{
+		Direction = FlightDirectionOverride;
+	}
+	else if (bFlyAwayFromPlayer)
 	{
 		const AActor* Threat = AlarmInstigator.Get();
 		const FVector ThreatLocation = (Threat != nullptr) ? Threat->GetActorLocation() : GetActorLocation() - GetActorForwardVector() * 500.0f;
@@ -419,6 +458,9 @@ void ACrowActor::EnterTakeOff()
 		Direction = Direction.RotateAngleAxis(FMath::FRandRange(-DirectionRandomSpreadDeg, DirectionRandomSpreadDeg), FVector::UpVector);
 	}
 	FlightDirection = Direction;
+
+	// One shot: the explicit direction is used for this take-off only.
+	bHasFlightDirectionOverride = false;
 
 	// Face the escape direction right away so the bird never leaves sideways.
 	FRotator TakeOffRotation = GetActorRotation();
@@ -516,10 +558,13 @@ void ACrowActor::ResetToIdle()
 {
 	GetWorldTimerManager().ClearTimer(StateTimer);
 	GetWorldTimerManager().ClearTimer(IdleCawTimer);
+	GetWorldTimerManager().ClearTimer(ScareDelayTimer);
 
 	AlarmInstigator = nullptr;
 	Velocity = FVector::ZeroVector;
 	FlightElapsed = 0.0f;
+	bHasFlightDirectionOverride = false;
+	bPlayAlarmSound = true;
 
 	StopAllSounds();
 	SetActorHiddenInGame(false);
