@@ -24,6 +24,16 @@
 2. Enable via **Edit → Plugins → UE52VFX_Crow**
 3. Restart editor and rebuild solution
 
+### ⚠️ Content Required
+
+The plugin depends on Content assets copied from the UE52VFX project. Without these, Blueprints will fail to load. Copy the following folders:
+
+- `Content/Crow/` - crow skeleton, 17 animations, textures (BaseColor, Normal, ORM, Specular), material M_Crow
+- `Content/Crow/Audio/` - SC_Crow_Caw_01/02/03 sound cues, SC_Crow_WingFlap, S_Crow_WingFlap
+- `Content/Snowman/` - materials M_SnowBody, M_Carrot, M_Coal, M_SnowGround
+- `Content/Maps/L_CrowSnowman.umap` - level with snowman, crow on head, trigger
+- `Content/Blueprints/BP_*.uasset` - BP_Crow, BP_Snowman, BP_CrowTrigger
+
 ### Usage
 
 **Spawning a Crow on Snowman:**
@@ -106,6 +116,16 @@ Free to use and modify. Attribution appreciated but not required.
 1. Положите `Plugins/UE52VFX_Crow/` в директорию `Plugins/` вашего проекта
 2. Включите плагин в **Edit → Plugins → UE52VFX_Crow**
 3. Перезапустите редактор и пересоберите решение
+
+### ⚠️ Необходимый контент
+
+Плагин зависит от ассетов, скопированных из проекта UE52VFX. Без этих файлов Blueprint-ы не загрузятся. Скопируйте следующие папки:
+
+- `Content/Crow/` — скелет, 17 анимаций, текстуры (BaseColor, Normal, ORM, Specular), материал M_Crow
+- `Content/Crow/Audio/` — звуковые файлы SC_Crow_Caw_01/02/03, SC_Crow_WingFlap, S_Crow_WingFlap
+- `Content/Snowman/` — материалы M_SnowBody, M_Carrot, M_Coal, M_SnowGround
+- `Content/Maps/L_CrowSnowman.umap` — уровень: снеговик + ворона на голове + триггер
+- `Content/Blueprints/BP_*.uasset` — BP_Crow, BP_Snowman, BP_CrowTrigger
 
 ### Использование
 
