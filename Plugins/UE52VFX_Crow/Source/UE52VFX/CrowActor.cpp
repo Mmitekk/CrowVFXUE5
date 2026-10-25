@@ -6,6 +6,7 @@
 #include "Components/AudioComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
@@ -29,11 +30,19 @@ ACrowActor::ACrowActor()
 	CrowMesh->SetGenerateOverlapEvents(false);
 	CrowMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 
-	CrowAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("CrowAudio"));
-	CrowAudio->SetupAttachment(CrowMesh);
-	CrowAudio->bAutoActivate = false;
-	CrowAudio->bOverrideAttenuation = false;
-	CrowAudio->bAllowSpatialization = true;
+	auto MakeAudio = [this](const TCHAR* Name) -> UAudioComponent*
+	{
+		UAudioComponent* Audio = CreateDefaultSubobject<UAudioComponent>(Name);
+		Audio->SetupAttachment(CrowMesh);
+		Audio->bAutoActivate = false;
+		Audio->bAllowSpatialization = true;
+		Audio->bOverrideAttenuation = false;
+		return Audio;
+	};
+
+	CrowAudio = MakeAudio(TEXT("CrowAudio"));
+	AlarmAudio = MakeAudio(TEXT("AlarmAudio"));
+	FlightAudio = MakeAudio(TEXT("FlightAudio"));
 }
 
 // ---------------------------------------------------------------------------- lifecycle
@@ -53,6 +62,75 @@ void ACrowActor::BeginPlay()
 
 	State = ECrowState::Idle;
 	PlayIdle();
+	ScheduleNextIdleCaw();
+}
+
+float ACrowActor::GetComputedMeshYawOffset() const
+{
+	const USkeletalMesh* Mesh = nullptr;
+	if (CrowSkeletalMesh != nullptr)
+	{
+		Mesh = CrowSkeletalMesh.Get();
+	}
+	else if (CrowMesh != nullptr)
+	{
+		Mesh = CrowMesh->GetSkeletalMeshAsset();
+	}
+
+	if (Mesh == nullptr)
+	{
+		return 0.0f;
+	}
+
+	const FReferenceSkeleton& Ref = Mesh->GetRefSkeleton();
+	const int32 NumBones = Ref.GetNum();
+	if (NumBones < 2)
+	{
+		return 0.0f;
+	}
+
+	// Component-space location of a bone in the reference pose.
+	auto ComponentLocation = [&Ref](int32 Index) -> FVector
+	{
+		FTransform Accum = Ref.GetRefBonePose()[Index];
+		for (int32 Parent = Ref.GetParentIndex(Index); Parent != INDEX_NONE; Parent = Ref.GetParentIndex(Parent))
+		{
+			Accum = Accum * Ref.GetRefBonePose()[Parent];
+		}
+		return Accum.GetLocation();
+	};
+
+	int32 RootIndex = Ref.FindBoneIndex(TEXT("root"));
+	if (RootIndex == INDEX_NONE)
+	{
+		RootIndex = 0;
+	}
+
+	int32 HeadIndex = INDEX_NONE;
+	for (int32 Index = 0; Index < NumBones; ++Index)
+	{
+		const FString BoneName = Ref.GetBoneName(Index).ToString();
+		if (BoneName.Contains(TEXT("head"), ESearchCase::IgnoreCase))
+		{
+			HeadIndex = Index;
+			break;
+		}
+	}
+
+	if (HeadIndex == INDEX_NONE || HeadIndex == RootIndex)
+	{
+		return 0.0f;
+	}
+
+	FVector Forward = ComponentLocation(HeadIndex) - ComponentLocation(RootIndex);
+	Forward.Z = 0.0f;
+	if (Forward.SizeSquared() < 1.0f)
+	{
+		return 0.0f;
+	}
+
+	// Rotating the mesh by -Yaw(Forward) makes the computed forward direction point along +X.
+	return -Forward.Rotation().Yaw;
 }
 
 void ACrowActor::ApplyMeshSettings()
@@ -72,8 +150,14 @@ void ACrowActor::ApplyMeshSettings()
 	}
 
 	CrowMesh->SetRelativeLocation(MeshRelativeLocation);
-	CrowMesh->SetRelativeRotation(MeshRelativeRotation);
 	CrowMesh->SetRelativeScale3D(FVector(CrowScale));
+
+	FRotator MeshRotation = MeshRotationOffset;
+	if (bAutoAlignMeshForward)
+	{
+		MeshRotation.Yaw += GetComputedMeshYawOffset();
+	}
+	CrowMesh->SetRelativeRotation(MeshRotation);
 }
 
 void ACrowActor::Tick(float DeltaSeconds)
@@ -162,11 +246,12 @@ void ACrowActor::UpdateIdle(float DeltaSeconds)
 	}
 }
 
-// ---------------------------------------------------------------------------- reaction
+// ---------------------------------------------------------------------------- sound
 
-void ACrowActor::PlayRandomSound(const TArray<TObjectPtr<USoundBase>>& Sounds, float Volume)
+void ACrowActor::PlayRandomSound(UAudioComponent* Component, const TArray<TObjectPtr<USoundBase>>& Sounds,
+	float Volume, USoundAttenuation* Attenuation)
 {
-	if (Sounds.Num() == 0 || CrowAudio == nullptr)
+	if (Component == nullptr || Sounds.Num() == 0)
 	{
 		return;
 	}
@@ -183,16 +268,55 @@ void ACrowActor::PlayRandomSound(const TArray<TObjectPtr<USoundBase>>& Sounds, f
 		return;
 	}
 
-	CrowAudio->SetSound(Sound);
-	CrowAudio->SetVolumeMultiplier(FMath::Max(Volume, 0.0f));
-	CrowAudio->bAllowSpatialization = bSpatializeSounds;
-	if (SoundAttenuation != nullptr)
-	{
-		CrowAudio->bOverrideAttenuation = false;
-		CrowAudio->AttenuationSettings = SoundAttenuation;
-	}
-	CrowAudio->Play();
+	Component->Stop();
+	Component->SetSound(Sound);
+	Component->SetVolumeMultiplier(FMath::Max(Volume, 0.0f));
+	Component->SetPitchMultiplier(FMath::Clamp(1.0f + FMath::FRandRange(-SoundPitchJitter, SoundPitchJitter), 0.1f, 3.0f));
+	Component->bAllowSpatialization = bSpatializeSounds;
+
+	// A raw sound wave has no attenuation of its own, so the component has to own it.
+	Component->bOverrideAttenuation = (Attenuation != nullptr);
+	Component->AttenuationSettings = Attenuation;
+
+	Component->Play();
 }
+
+void ACrowActor::StopAllSounds()
+{
+	for (UAudioComponent* Component : {CrowAudio.Get(), AlarmAudio.Get(), FlightAudio.Get()})
+	{
+		if (Component != nullptr)
+		{
+			Component->Stop();
+		}
+	}
+}
+
+void ACrowActor::ScheduleNextIdleCaw()
+{
+	if (!bCawWhileIdle || IdleCawSounds.Num() == 0 || State != ECrowState::Idle || GetWorld() == nullptr)
+	{
+		return;
+	}
+
+	const float MinInterval = FMath::Max(IdleCawIntervalMin, 0.2f);
+	const float MaxInterval = FMath::Max(IdleCawIntervalMax, MinInterval);
+	GetWorldTimerManager().SetTimer(IdleCawTimer, this, &ACrowActor::HandleIdleCaw,
+		FMath::FRandRange(MinInterval, MaxInterval), false);
+}
+
+void ACrowActor::HandleIdleCaw()
+{
+	if (State != ECrowState::Idle)
+	{
+		return;
+	}
+
+	PlayRandomSound(CrowAudio, IdleCawSounds, IdleCawVolume, IdleCawAttenuation);
+	ScheduleNextIdleCaw();
+}
+
+// ---------------------------------------------------------------------------- reaction
 
 void ACrowActor::TriggerFlee(AActor* InstigatorActor)
 {
@@ -201,10 +325,12 @@ void ACrowActor::TriggerFlee(AActor* InstigatorActor)
 		return;
 	}
 
+	GetWorldTimerManager().ClearTimer(IdleCawTimer);
+
 	AlarmInstigator = InstigatorActor;
 	State = ECrowState::Alarmed;
 
-	PlayRandomSound(AlarmedSounds, AlarmedSoundVolume);
+	PlayRandomSound(AlarmAudio, AlarmedSounds, AlarmVolume, AlarmAttenuation);
 	OnCrowAlarmed(InstigatorActor);
 
 	if (TriggerDelay <= 0.0f)
@@ -253,7 +379,7 @@ void ACrowActor::EnterTakeOff()
 		PlayAnimationSequence(TakeOffAnimation, false, TakeOffAnimationTimeScale);
 	}
 
-	PlayRandomSound(TakeOffSounds, TakeOffSoundVolume);
+	PlayRandomSound(FlightAudio, TakeOffSounds, TakeOffVolume, TakeOffAttenuation);
 
 	// Escape direction: away from whoever scared the bird, with a bit of random spread.
 	FVector Direction = GetActorForwardVector();
@@ -274,6 +400,13 @@ void ACrowActor::EnterTakeOff()
 		Direction = Direction.RotateAngleAxis(FMath::FRandRange(-DirectionRandomSpreadDeg, DirectionRandomSpreadDeg), FVector::UpVector);
 	}
 	FlightDirection = Direction;
+
+	// Face the escape direction right away so the bird never leaves sideways.
+	FRotator TakeOffRotation = GetActorRotation();
+	TakeOffRotation.Pitch = 0.0f;
+	TakeOffRotation.Roll = 0.0f;
+	TakeOffRotation.Yaw = FlightDirection.Rotation().Yaw;
+	SetActorRotation(TakeOffRotation);
 
 	FlightStartLocation = GetActorLocation();
 	FlightElapsed = 0.0f;
@@ -318,8 +451,9 @@ void ACrowActor::UpdateFlying(float DeltaSeconds)
 
 	if (!Velocity.IsNearlyZero())
 	{
-		const FRotator DesiredRotation = Velocity.Rotation();
-		SetActorRotation(FMath::RInterpTo(GetActorRotation(), DesiredRotation, DeltaSeconds, 3.5f));
+		FRotator DesiredRotation = Velocity.Rotation();
+		DesiredRotation.Roll = 0.0f;
+		SetActorRotation(FMath::RInterpTo(GetActorRotation(), DesiredRotation, DeltaSeconds, 4.0f));
 	}
 
 	const float Travelled = FVector::Dist(GetActorLocation(), FlightStartLocation);
@@ -336,6 +470,8 @@ void ACrowActor::FinishFlight()
 	State = ECrowState::Gone;
 	Velocity = FVector::ZeroVector;
 	SetActorTickEnabled(false);
+	GetWorldTimerManager().ClearTimer(IdleCawTimer);
+	StopAllSounds();
 
 	if (bDestroyAfterFlight)
 	{
@@ -350,15 +486,19 @@ void ACrowActor::FinishFlight()
 void ACrowActor::ResetToIdle()
 {
 	GetWorldTimerManager().ClearTimer(StateTimer);
+	GetWorldTimerManager().ClearTimer(IdleCawTimer);
 
 	AlarmInstigator = nullptr;
 	Velocity = FVector::ZeroVector;
 	FlightElapsed = 0.0f;
 
+	StopAllSounds();
 	SetActorHiddenInGame(false);
 	SetActorTickEnabled(true);
 	SetActorTransform(IdleTransform);
+	ApplyMeshSettings();
 
 	State = ECrowState::Idle;
 	PlayIdle();
+	ScheduleNextIdleCaw();
 }

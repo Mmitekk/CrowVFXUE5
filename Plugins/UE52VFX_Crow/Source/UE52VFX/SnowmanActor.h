@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-// Snowman assembled from primitive meshes; it also owns the perch where the crow sits.
-// All proportions and materials are exposed to Blueprint / details panel.
+// Snowman made of one static mesh; it also owns the perch where the crow sits.
+// The perch is a normal editable component: move it wherever the bird has to sit.
 
 #pragma once
 
@@ -24,126 +24,84 @@ public:
 
 	// ------------------------------------------------------------------ components
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
+	/** Root of the actor. / Корень актёра. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components",
+		meta = (ToolTip = "EN: Root component. Do not edit its transform, move the actor instead.\nRU: Корневой компонент. Не меняйте его трансформ, перемещайте самого актёра."))
 	TObjectPtr<USceneComponent> Root;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
-	TObjectPtr<UStaticMeshComponent> BaseBall;
+	/** The single static mesh that makes the whole snowman. / Единственная статическая сетка, из которой состоит весь снеговик. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components",
+		meta = (ToolTip = "EN: The only visual component of the snowman. Assign the mesh in Snowman Mesh.\nRU: Единственный визуальный компонент снеговика. Сетка назначается в Snowman Mesh."))
+	TObjectPtr<UStaticMeshComponent> SnowmanMesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
-	TObjectPtr<UStaticMeshComponent> BodyBall;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
-	TObjectPtr<UStaticMeshComponent> HeadBall;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
-	TObjectPtr<UStaticMeshComponent> NoseCone;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
-	TObjectPtr<UStaticMeshComponent> LeftEye;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
-	TObjectPtr<UStaticMeshComponent> RightEye;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
-	TObjectPtr<UStaticMeshComponent> LeftArm;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
-	TObjectPtr<UStaticMeshComponent> RightArm;
-
-	/** Where the crow sits. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snowman|Components")
+	/** Where the crow sits. Move it in the Blueprint or in the details panel of a placed actor. / Где сидит ворона. Перемещайте в блюпринте или в панели Details у экземпляра. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Snowman|Components",
+		meta = (ToolTip = "EN: The perch point. Its transform is never overwritten by the code, so you can drag it anywhere (Blueprint viewport, details panel, or the components tree of a placed actor).\nRU: Точка присады. Код никогда не перезаписывает её трансформ, поэтому её можно двигать куда угодно (вьюпорт блюпринта, панель Details или дерево компонентов у экземпляра на уровне)."))
 	TObjectPtr<USceneComponent> PerchPoint;
 
-	// ------------------------------------------------------------------ look
+	// ------------------------------------------------------------------ mesh
 
-	/** Radius (cm) of the bottom snowball. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look", meta = (ClampMin = "5", ClampMax = "200"))
-	float BaseRadius = 55.0f;
+	/** Static mesh of the whole snowman. / Статическая сетка всего снеговика. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Mesh",
+		meta = (ToolTip = "EN: Static mesh that is drawn as the snowman. Empty = nothing is visible.\nRU: Статическая сетка, которая отображается как снеговик. Пусто = ничего не видно."))
+	TObjectPtr<UStaticMesh> SnowmanStaticMesh;
 
-	/** Radius (cm) of the middle snowball. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look", meta = (ClampMin = "5", ClampMax = "200"))
-	float BodyRadius = 40.0f;
+	/** Material override for the snowman mesh. Empty keeps the mesh material. / Материал-оверрайд для сетки. Пусто — материал из сетки. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Mesh",
+		meta = (ToolTip = "EN: Material applied to slot 0 of the snowman mesh. Empty = the material saved inside the static mesh.\nRU: Материал для слота 0 сетки снеговика. Пусто = материал, сохранённый в статической сетке."))
+	TObjectPtr<UMaterialInterface> SnowmanMaterial;
 
-	/** Radius (cm) of the head snowball. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look", meta = (ClampMin = "5", ClampMax = "200"))
-	float HeadRadius = 28.0f;
+	/** Offset of the mesh relative to the actor origin. / Смещение сетки относительно центра актёра. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Mesh",
+		meta = (ToolTip = "EN: Moves the mesh relative to the actor origin, e.g. to put its base exactly at the actor location.\nRU: Двигает сетку относительно центра актёра, например чтобы её основание стояло ровно в точке актёра."))
+	FVector MeshLocationOffset = FVector::ZeroVector;
 
-	/** Snow material. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look")
-	TObjectPtr<UMaterialInterface> SnowMaterial;
+	/** Rotation of the mesh relative to the actor. / Поворот сетки относительно актёра. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Mesh",
+		meta = (ToolTip = "EN: Rotation of the snowman mesh inside the actor.\nRU: Поворот сетки снеговика внутри актёра."))
+	FRotator MeshRotationOffset = FRotator::ZeroRotator;
 
-	/** Material of the nose. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look")
-	TObjectPtr<UMaterialInterface> CarrotMaterial;
-
-	/** Material of the eyes and buttons. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look")
-	TObjectPtr<UMaterialInterface> CoalMaterial;
-
-	/** Show the carrot nose. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look")
-	bool bShowNose = true;
-
-	/** Show the coal eyes. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look")
-	bool bShowEyes = true;
-
-	/** Show the stick arms. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look")
-	bool bShowArms = true;
-
-	/** Nose length (cm). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look", meta = (ClampMin = "3", ClampMax = "120"))
-	float NoseLength = 30.0f;
-
-	/** Nose thickness (cm). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look", meta = (ClampMin = "1", ClampMax = "30"))
-	float NoseThickness = 7.0f;
-
-	/** Arm length (cm). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look", meta = (ClampMin = "5", ClampMax = "200"))
-	float ArmLength = 55.0f;
-
-	/** Arm thickness (cm). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look", meta = (ClampMin = "0.5", ClampMax = "15"))
-	float ArmThickness = 3.0f;
-
-	/** How high (deg above horizontal) the arms point. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Look", meta = (ClampMin = "-60", ClampMax = "60"))
-	float ArmRaiseAngle = 20.0f;
+	/** Uniform scale of the snowman. / Общий масштаб снеговика. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Mesh", meta = (ClampMin = "0.01", ClampMax = "50",
+		ToolTip = "EN: Uniform scale of the snowman mesh.\nRU: Общий масштаб сетки снеговика."))
+	float SnowmanScale = 1.0f;
 
 	// ------------------------------------------------------------------ crow
 
-	/** Which crow class to place on the perch. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Crow")
+	/** Which crow class to place on the perch. / Какой класс вороны сажать на присаду. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Crow",
+		meta = (ToolTip = "EN: Crow class spawned on the perch at Begin Play (usually BP_Crow).\nRU: Класс вороны, который создаётся на присаде при старте (обычно BP_Crow)."))
 	TSubclassOf<ACrowActor> CrowClass;
 
-	/** Spawn the crow automatically on Begin Play. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Crow")
+	/** Spawn the crow automatically on Begin Play. / Создавать ворону автоматически при старте. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Crow",
+		meta = (ToolTip = "EN: On: a crow is spawned on the perch when the game starts. Off: place a crow by hand and it will be adopted if it stands close to the perch.\nRU: Вкл: ворона создаётся на присаде при старте игры. Выкл: поставьте ворону вручную — она подхватится, если стоит рядом с присадой."))
 	bool bSpawnCrowOnPerch = true;
 
-	/** The crow currently sitting on the snowman (spawned or placed by hand). */
-	UPROPERTY(BlueprintReadOnly, Category = "Snowman|Crow")
+	/** Make the crow face the same direction as the perch point. / Разворачивать ворону так же, как точку присады. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Crow",
+		meta = (ToolTip = "EN: On: the spawned crow copies the perch rotation. Off: the crow keeps its default rotation.\nRU: Вкл: созданная ворона копирует поворот присады. Выкл: ворона сохраняет свой поворот по умолчанию."))
+	bool bAlignCrowToPerch = true;
+
+	/** The crow currently sitting on the snowman (spawned or placed by hand). / Ворона, которая сейчас сидит на снеговике. */
+	UPROPERTY(BlueprintReadOnly, Category = "Snowman|Crow",
+		meta = (ToolTip = "EN: The crow that currently sits on the perch. Read only, set at runtime.\nRU: Ворона, которая сейчас сидит на присаде. Только чтение, заполняется в рантайме."))
 	TObjectPtr<ACrowActor> CrowOnPerch;
 
-	/** Local offset of the perch relative to the top of the head. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snowman|Crow")
-	FVector PerchOffset = FVector(-6.0f, 0.0f, 0.0f);
-
-	/** World location of the perch. */
-	UFUNCTION(BlueprintPure, Category = "Snowman")
+	/** World location of the perch. / Мировая позиция присады. */
+	UFUNCTION(BlueprintPure, Category = "Snowman",
+		meta = (ToolTip = "EN: World location of the perch point.\nRU: Мировая позиция точки присады."))
 	FVector GetPerchLocation() const;
 
-	/** Spawn (or move) the crow on the perch. */
-	UFUNCTION(BlueprintCallable, Category = "Snowman")
+	/** Spawn (or move) the crow on the perch. / Создать (или переставить) ворону на присаду. */
+	UFUNCTION(BlueprintCallable, Category = "Snowman",
+		meta = (ToolTip = "EN: Spawns a new crow on the perch and remembers it. Call it again to replace the current bird.\nRU: Создаёт новую ворону на присаде и запоминает её. Вызовите снова, чтобы заменить текущую птицу."))
 	ACrowActor* SpawnCrowOnPerch();
-
-	/** Rebuild the parts from the current settings. */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Snowman")
-	void RebuildSnowman();
 
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
+
+private:
+	void ApplyMeshSettings();
 };

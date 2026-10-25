@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0",
+	"Version": 11,
+	"VersionName": "1.1",
 	"FriendlyName": "UE52VFX Crow & Snowman",
-	"Description": "Crow sitting on a snowman that caws and flies away when the player approaches. Blueprintable C++ actors with editable parameters: activation radius, delay, flight speed, animation slots, sound cues and attenuation.",
+	"Description": "Crow sitting on a snowman that caws and flies away when the player approaches. Includes a single-mesh snowman with a movable perch, three independent sound groups (idle caw / alarm / take off) with per-group volume and attenuation, automatic mesh forward alignment, bilingual (EN/RU) property tooltips and a demo map.",
 	"Category": "Gameplay",
 	"CreatedBy": "",
 	"CreatedByURL": "",
