@@ -1,255 +1,269 @@
-# UE52VFX Crow & Snowman Plugin
+# UE52VFX Crow & Snowman — Unreal Engine 5.2
 
-[English](#english) | [Русский](#русский)
+Ворона сидит на снеговике, каркает и улетает, когда игрок подходит. Всё настраивается в Blueprint.
 
----
+[**Русский**](#русский) · [**English**](#english)
 
-## English
-
-### Overview
-
-**UE52VFX_Crow** is a Unreal Engine 5.2 plugin that implements a crow sitting on a snowman, taking off when the player approaches, and flying away. 
-
-### Features
-
-- **Crow AI** with 5 states: Idle → Alarmed → TakingOff → Flying → Landing
-- **Snowman** with 3 activation radius zones (outer/middle/inner)
-- **Trigger system** (one-shot or multi-shot)
-- All parameters editable in Blueprint Details
-- Sound system with attenuation (80cm inner sphere, 15m falloff)
-
-### Installation
-
-1. Place `Plugins/UE52VFX_Crow/` in your project's `Plugins/` directory
-2. Enable via **Edit → Plugins → UE52VFX_Crow**
-3. Restart editor and rebuild solution
-
-### ⚠️ Content Required
-
-The plugin depends on Content assets copied from the UE52VFX project. Without these, Blueprints will fail to load. Copy the following folders:
-
-- `Content/Crow/` - crow skeleton, 17 animations, textures (BaseColor, Normal, ORM, Specular), material M_Crow
-- `Content/Crow/Audio/` - SC_Crow_Caw_01/02/03 sound cues, SC_Crow_WingFlap, S_Crow_WingFlap
-- `Content/Snowman/` - materials M_SnowBody, M_Carrot, M_Coal, M_SnowGround
-- `Content/Maps/L_CrowSnowman.umap` - level with snowman, crow on head, trigger
-- `Content/Blueprints/BP_*.uasset` - BP_Crow, BP_Snowman, BP_CrowTrigger
-
-### Usage
-
-**Spawning a Crow on Snowman:**
-1. Place `ASnowmanActor` in your level
-2. Set `Crow Class` to `BP_Crow` or `ACrowActor` subclass
-3. Assign materials: `M_SnowBody`, `M_Coal`, `M_Carrot`, `M_SnowGround`
-4. Configure radii: `OuterActivationRadius`, `MiddleActivationRadius`, `InnerActivationRadius`
-5. Set `CrowTriggerDelay` for flight delay
-6. Play - crow takes off when player enters middle radius
-
-**Using Trigger Volume:**
-1. Place `ACrowTrigger` in level
-2. Set `ActivationRadius` and `TriggerDelay`
-3. Choose `bSpawnCrow` for auto-spawn
-4. Choose `bOneShot` for single use or allow multiple activations
-5. Assign `CrowClass` for specific crow class
-
-### Blueprint Examples
-
-**Trigger crow flight:**
-```blueprint
-Event BeginPlay
-    -> Get ACrowTrigger
-    -> Call TriggerCrow()
-```
-
-**Check if flying:**
-```blueprint
-Event Tick
-    -> Get ACrowTrigger
-    -> Call IsCrowFlying()
-    -> Branch (result)
-       -> Do flying logic
-```
-
-**Reset to idle:**
-```blueprint
-Event AnyKey
-    -> Get ASnowmanActor
-    -> Call ResetState()
-```
-
-### Project Structure
-
-```
-UE52VFX_Crow/
-├─ Source/UE52VFX_Crow/       ← C++ source files
-│  ├─ CrowActor.h/.cpp
-│  ├─ SnowmanActor.h/.cpp
-│  ├─ CrowTrigger.h/.cpp
-│  ├─ CrowAssetLibrary.h/.cpp
-│  └─ UE52VFX_Crow.Build.cs
-├─ uplugin/UE52VFX_Crow.uplugin
-├─ Content/                   ← Blueprints, materials, sounds
-└─ README.md
-```
-
-### License
-
-Free to use and modify. Attribution appreciated but not required.
+![Ворона на снеговике](docs/perched.png)
 
 ---
 
 ## Русский
 
-### Обзор
+### Что это
 
-**UE52VFX_Crow** — плагин для Unreal Engine 5.2, реализующий ворону, сидящую на снеговике, которая улетает когда к ней подходит игрок.
+Плагин для Unreal Engine 5.2: ворона сидит на голове снеговика, при подходе игрока каркает, ждёт заданную задержку и улетает. Все параметры (радиус активации, задержка, скорости, анимации, звуки, аттенюация) редактируются в Blueprint Details.
 
-### Возможности
+Логика написана на C++ и полностью открыта для Blueprint: `ACrowActor`, `ASnowmanActor`, `ACrowTrigger` — все `Blueprintable`.
 
-- **AI воровы** с 5 состояниями: Idle → Alarmed → TakingOff → Flying → Landing
-- **Снеговик** с 3 зонами активации (внешний/средний/внутренний)
-- **Система триггеров** (однократный/многократный)
-- Все параметры редактируются в Details Blueprint
-- Звуковая система с аттенюацией (80см внутренняя сфера, 15м затухание)
+### Требования
+
+- Unreal Engine **5.2**
+- Компилятор C++ (Visual Studio 2022 с компонентом «Разработка игр на C++»)
+- Пакет **Animal Variety Pack** (ворона: `SK_Crow` + анимации) — должен лежать в `/Game/AnimalVarietyPack/Crow/`
 
 ### Установка
 
-1. Положите `Plugins/UE52VFX_Crow/` в директорию `Plugins/` вашего проекта
-2. Включите плагин в **Edit → Plugins → UE52VFX_Crow**
-3. Перезапустите редактор и пересоберите решение
+**1. Скопировать плагин**
 
-### ⚠️ Необходимый контент
+```
+<ВашПроект>/Plugins/UE52VFX_Crow/
+```
 
-Плагин зависит от ассетов, скопированных из проекта UE52VFX. Без этих файлов Blueprint-ы не загрузятся. Скопируйте следующие папки:
+**2. Скопировать контент** — обязательно, иначе Blueprint'ы будут «битыми»
 
-- `Content/Crow/` — скелет, 17 анимаций, текстуры (BaseColor, Normal, ORM, Specular), материал M_Crow
-- `Content/Crow/Audio/` — звуковые файлы SC_Crow_Caw_01/02/03, SC_Crow_WingFlap, S_Crow_WingFlap
-- `Content/Snowman/` — материалы M_SnowBody, M_Carrot, M_Coal, M_SnowGround
-- `Content/Maps/L_CrowSnowman.umap` — уровень: снеговик + ворона на голове + триггер
-- `Content/Blueprints/BP_*.uasset` — BP_Crow, BP_Snowman, BP_CrowTrigger
+Плагин кладёт ассеты ровно по тем путям, которые прописаны внутри Blueprint'ов:
+
+| Что | Куда |
+|---|---|
+| `Content/VFX/Crow/` | `<Проект>/Content/VFX/Crow/` |
+| `Content/AnimalVarietyPack/Crow/Audio/` | `<Проект>/Content/AnimalVarietyPack/Crow/Audio/` |
+
+Внутри `/Game/VFX/Crow/` должны оказаться:
+
+```
+BP_Crow.uasset
+BP_CrowTrigger.uasset
+BP_Snowman.uasset
+ATN_Crow.uasset
+M_Carrot.uasset  M_Coal.uasset  M_SnowGround.uasset  M_Snowman.uasset
+Audio/SC_Crow_Caw_01..03.uasset
+Audio/SC_Crow_WingFlap.uasset
+Audio/S_Crow_WingFlap.uasset
+```
+
+> **Важно:** пути `/Game/VFX/Crow/...` и `/Game/AnimalVarietyPack/Crow/...` зашиты в сами `.uasset`. Если положить файлы в другую папку — Blueprint'ы не найдут зависимости. Именно поэтому нельзя просто закинуть их в `Content/WinterHunt/Animals/Crow/`.
+
+**3. Включить плагин**
+
+В `WinterHut.uproject` (или любом другом `.uproject`):
+
+```json
+"Plugins": [
+    {
+        "Name": "UE52VFX_Crow",
+        "Enabled": true
+    }
+]
+```
+
+Либо в редакторе: **Edit → Plugins → UE52VFX Crow & Snowman → Enabled**.
+
+**4. Собрать**
+
+```bat
+"D:\Unreal Projects\UE_5.2\Engine\Build\BatchFiles\Build.bat" <ВашПроект>Editor Win64 Development -Project="<путь>\<Проект>.uproject"
+```
+
+Или: **Build → Generate Project Files** и собрать `*.sln` в Visual Studio.
+
+После сборки в `Plugins/UE52VFX_Crow/Binaries/Win64/` появится `UnrealEditor-UE52VFX.dll`.
+
+### Почему модуль называется `UE52VFX`, а папка `UE52VFX_Crow`
+
+Внутри `BP_Crow.uasset` родительский класс записан как `/Script/UE52VFX.CrowActor`. Если назвать модуль иначе (`UE52VFX_Crow`), Unreal не найдёт класс, и Blueprint будет «битым» — его нельзя будет ни открыть, ни поставить на уровень. Поэтому **имя модуля обязано быть `UE52VFX`**. Имя папки плагина при этом любое.
 
 ### Использование
 
-**Спавн вороны на снеговике:**
-1. Положите `ASnowmanActor` в уровень
-2. Установите свойство `Crow Class` в `BP_Crow` (или класс `ACrowActor` наследник)
-3. Назначьте материалы: `M_SnowBody`, `M_Coal`, `M_Carrot`, `M_SnowGround`
-4. Настройте радиусы: `OuterActivationRadius`, `MiddleActivationRadius`, `InnerActivationRadius`
-5. Установите `CrowTriggerDelay` для задержки перед полетом
-6. Поиграйте — ворона взлетит когда игрок займет средний радиус
+**Вариант А — снеговик сам спавнит ворону**
 
-**Использование объемного триггера:**
-1. Положите `ACrowTrigger` в уровень
-2. Установите `ActivationRadius` и `TriggerDelay`
-3. Выберите `bSpawnCrow` для автоматического спавна
-4. Выберите `bOneShot` для однократного срабатывания или разрешите многократные активации
-5. Назначьте `CrowClass` для конкретного класса вороны
+1. Поставьте `BP_Snowman` на уровень
+2. В Details укажите `Crow Class` → `BP_Crow`
+3. Настройте радиусы: `Outer Activation Radius`, `Middle Activation Radius`, `Inner Activation Radius`
+4. `Crow Trigger Delay` — задержка перед взлётом
 
-### Примеры в Blueprints
+**Вариант Б — отдельный триггер**
 
-**Активация полета:**
-```blueprint
-Event BeginPlay
-    -> Get ACrowTrigger
-    -> Call TriggerCrow()
+1. Поставьте `BP_CrowTrigger` на уровень
+2. `Activation Radius` — радиус срабатывания
+3. `Trigger Delay` — задержка
+4. `b Spawn Crow` — спавнить ворону автоматически
+5. `b One Shot` — однократное срабатывание
+
+### Что настраивается в `BP_Crow`
+
+| Параметр | Описание |
+|---|---|
+| `Crow Skeletal Mesh` | сетка вороны (`SK_Crow`) |
+| `Crow Scale` | масштаб |
+| `Idle Animation` | анимация сидения (`ANIM_Crow_IdleLookAround`) |
+| `TakeOff Animation` | анимация взлёта (`ANIM_Crow_TakeOff`) |
+| `Fly Animation` | анимация полёта (`ANIM_Crow_Fly`) |
+| `Caw Sounds` | массив SoundCue карканья |
+| `Wing Flap Sounds` | массив SoundCue взмахов |
+| `Sound Attenuation` | `ATN_Crow` — громкость и затухание по расстоянию |
+| `Activation Radius` | с какого расстояния ворона реагирует |
+| `Trigger Delay` | пауза перед взлётом |
+| `Take Off Speed` / `Fly Speed` | скорости взлёта и полёта |
+| `Climb Height` | высота набора |
+| `Max Flight Time` | сколько летит до исчезновения |
+| `Despawn Distance` | дистанция, после которой уничтожается |
+
+### API (C++)
+
+```cpp
+// Заставить ворону улететь
+Crow->TriggerFlee();
+
+// Вернуть в исходное состояние
+Crow->ResetToIdle();
+
+// Состояния: Idle → Alarmed → TakingOff → Flying → Gone
 ```
 
-**Проверка полета:**
-```blueprint
-Event Tick
-    -> Get ACrowTrigger
-    -> Call IsCrowFlying()
-    -> Branch (result)
-       -> Do flying logic
-```
+### Проверено
 
-**Возврат в idle:**
-```blueprint
-Event AnyKey
-    -> Get ASnowmanActor
-    -> Call ResetState()
-```
-
-### Структура проекта
-
-```
-UE52VFX_Crow/
-├─ Source/UE52VFX_Crow/       ← C++ source files
-│  ├─ CrowActor.h/.cpp
-│  ├─ SnowmanActor.h/.cpp
-│  ├─ CrowTrigger.h/.cpp
-│  ├─ CrowAssetLibrary.h/.cpp
-│  └─ UE52VFX_Crow.Build.cs
-├─ uplugin/UE52VFX_Crow.uplugin
-├─ Content/                   ← Blueprints, materials, sounds
-└─ README.md
-```
-
-### Лицензия
-
-Бесплатен для использования и модификации. Атрибуция приветствуется, но не требуется.
+- Сборка `WinterHutEditor Win64 Development` — успешно, `UnrealEditor-UE52VFX.dll` создан
+- Все три Blueprint'а загружаются и **спавнятся на уровень** (headless-проверка в редакторе)
+- Компоненты наследуются от нативных классов: `BP_Crow` → `CrowRoot`/`CrowMesh`/`CrowAudio`, `BP_CrowTrigger` → `TriggerSphere`, `BP_Snowman` → `Root`/`HeadBall`/`PerchPoint`
 
 ---
 
-## Installation
+## English
 
-### Method 1: Via Plugins Menu
-1. Place the `UE52VFX_Crow` folder in your project's `Plugins/` directory
-2. Enable the plugin in **Edit → Plugins → UE52VFX_Crow**
-3. Restart Unreal Engine editor
-4. The C++ classes will compile automatically
+### What it is
 
-### Method 2: Manual Setup
-1. Copy `Plugins/UE52VFX_Crow/` into your project's `Plugins/` folder
-2. Add `UE52VFX_Crow` to your module's `Build.cs`:
-   ```csharp
-   PublicDependencyNames.Add("UE52VFX_Crow");
-   ```
-3. Rebuild the solution (Build → Generate Project Files → Build)
+An Unreal Engine 5.2 plugin: a crow perches on a snowman's head, caws when the player comes close, waits a configurable delay and flies away. Everything (activation radius, delay, speeds, animations, sounds, attenuation) is editable in Blueprint details.
 
-## Usage
+The logic lives in C++ and is fully exposed to Blueprint: `ACrowActor`, `ASnowmanActor`, `ACrowTrigger` are all `Blueprintable`.
 
-### Spawning a Crow on Snowman
-1. Place `ASnowmanActor` in your level
-2. Set the `Crow Class` property to `BP_Crow` (or `ACrowActor` subclass)
-3. Assign materials: `M_SnowBody`, `M_Coal`, `M_Carrot`, `M_SnowGround`
-4. Configure radius values: `OuterActivationRadius`, `MiddleActivationRadius`, `InnerActivationRadius`
-5. Set `CrowTriggerDelay` for the delay before flight
-6. Play - when player enters the middle radius, the crow will take off
+### Requirements
 
-### Using the Trigger Volume
-1. Place `ACrowTrigger` in your level
-2. Set `ActivationRadius` for the trigger area
-3. Set `TriggerDelay` for the delay
-4. Choose `bSpawnCrow` to automatically spawn a crow
-5. Choose `bOneShot` for single-use trigger or allow multiple activations
-6. Assign `CrowClass` if you want a specific crow class
+- Unreal Engine **5.2**
+- A C++ toolchain (Visual Studio 2022 with "Game development with C++")
+- **Animal Variety Pack** content (crow `SK_Crow` + animations) at `/Game/AnimalVarietyPack/Crow/`
 
-## Content Included
+### Installation
 
-### C++ Classes
-- `ACrowActor` - Main crow AI actor
-- `ASnowmanActor` - Snowman with crow spawning
-- `ACrowTrigger` - Trigger volume for crow activation
-- `UCrowAssetLibrary` - Asset creation helper
-- `UCrowSoundLibrary` - Sound management
+**1. Copy the plugin**
 
-### Blueprints (generated from C++)
-- `BP_Crow` - Editable blueprint based on `ACrowActor`
-- `BP_Snowman` - Editable blueprint based on `ASnowmanActor`
-- `BP_CrowTrigger` - Editable blueprint based on `ACrowTrigger`
+```
+<YourProject>/Plugins/UE52VFX_Crow/
+```
 
-### Audio Assets (setup guidance)
-- `SC_Crow_Caw_01/02/03` - Crow call sound cues
-- `SC_Crow_WingFlap` - Wing flap sound cue
-- `SC_Crow_Attenuation` - Attenuation settings (80cm inner sphere, 15m falloff)
+**2. Copy the content** — required, otherwise the Blueprints are broken
 
-### Materials
-- `M_Crow` - Crow feather material (from Winter Hunt Animal Variety Pack)
-- `M_SnowBody`, `M_Coal`, `M_Carrot`, `M_SnowGround` - Snowman materials
+The assets must land on the exact paths baked into the Blueprint files:
 
-### Level Example
-- `L_CrowSnowman` - Example level with snowman, crow on head, and trigger
+| What | Where |
+|---|---|
+| `Content/VFX/Crow/` | `<Project>/Content/VFX/Crow/` |
+| `Content/AnimalVarietyPack/Crow/Audio/` | `<Project>/Content/AnimalVarietyPack/Crow/Audio/` |
+
+`/Game/VFX/Crow/` must contain:
+
+```
+BP_Crow.uasset
+BP_CrowTrigger.uasset
+BP_Snowman.uasset
+ATN_Crow.uasset
+M_Carrot.uasset  M_Coal.uasset  M_SnowGround.uasset  M_Snowman.uasset
+Audio/SC_Crow_Caw_01..03.uasset
+Audio/SC_Crow_WingFlap.uasset
+Audio/S_Crow_WingFlap.uasset
+```
+
+> **Important:** the paths `/Game/VFX/Crow/...` and `/Game/AnimalVarietyPack/Crow/...` are baked into the `.uasset` files. Putting them in another folder breaks the references — that is why dumping them into `Content/WinterHunt/Animals/Crow/` does not work.
+
+**3. Enable the plugin**
+
+In your `.uproject`:
+
+```json
+"Plugins": [
+    {
+        "Name": "UE52VFX_Crow",
+        "Enabled": true
+    }
+]
+```
+
+Or in the editor: **Edit → Plugins → UE52VFX Crow & Snowman → Enabled**.
+
+**4. Build**
+
+```bat
+"D:\Unreal Projects\UE_5.2\Engine\Build\BatchFiles\Build.bat" <YourProject>Editor Win64 Development -Project="<path>\<Project>.uproject"
+```
+
+Or **Build → Generate Project Files**, then build the generated `*.sln`.
+
+After a successful build, `Plugins/UE52VFX_Crow/Binaries/Win64/UnrealEditor-UE52VFX.dll` appears.
+
+### Why the module is called `UE52VFX` and the folder `UE52VFX_Crow`
+
+Inside `BP_Crow.uasset` the parent class is stored as `/Script/UE52VFX.CrowActor`. Name the module anything else (`UE52VFX_Crow`) and Unreal cannot resolve the class — the Blueprint becomes broken and cannot be opened or placed. **The module name must be `UE52VFX`.** The plugin folder name is free.
+
+### Usage
+
+**Option A — snowman spawns the crow**
+
+1. Place `BP_Snowman` in the level
+2. Set `Crow Class` to `BP_Crow`
+3. Tune `Outer/Middle/Inner Activation Radius`
+4. Set `Crow Trigger Delay`
+
+**Option B — standalone trigger**
+
+1. Place `BP_CrowTrigger`
+2. `Activation Radius`, `Trigger Delay`
+3. `b Spawn Crow` to auto-spawn, `b One Shot` for single use
+
+### Exposed on `BP_Crow`
+
+| Property | Purpose |
+|---|---|
+| `Crow Skeletal Mesh` | `SK_Crow` |
+| `Crow Scale` | uniform scale |
+| `Idle Animation` | `ANIM_Crow_IdleLookAround` |
+| `TakeOff Animation` | `ANIM_Crow_TakeOff` |
+| `Fly Animation` | `ANIM_Crow_Fly` |
+| `Caw Sounds` | array of `SoundCue` |
+| `Wing Flap Sounds` | array of `SoundCue` |
+| `Sound Attenuation` | `ATN_Crow` |
+| `Activation Radius` | reaction distance |
+| `Trigger Delay` | pause before take-off |
+| `Take Off Speed` / `Fly Speed` | speeds |
+| `Climb Height` | altitude gain |
+| `Max Flight Time` | lifetime of the flight |
+| `Despawn Distance` | destroy distance |
+
+### C++ API
+
+```cpp
+Crow->TriggerFlee();   // scare it away
+Crow->ResetToIdle();   // back to perch
+// States: Idle → Alarmed → TakingOff → Flying → Gone
+```
+
+### Verified
+
+- `WinterHutEditor Win64 Development` builds clean, `UnrealEditor-UE52VFX.dll` produced
+- All three Blueprints load **and spawn into the level** (headless editor check)
+- Components inherit from the native classes: `BP_Crow` → `CrowRoot`/`CrowMesh`/`CrowAudio`, `BP_CrowTrigger` → `TriggerSphere`, `BP_Snowman` → `Root`/`HeadBall`/`PerchPoint`
 
 ---
 
-*Plugin created for UE52VFX project, adapted for general use in other UE5.2 projects.*
+## License
+
+MIT. Free to use and modify.

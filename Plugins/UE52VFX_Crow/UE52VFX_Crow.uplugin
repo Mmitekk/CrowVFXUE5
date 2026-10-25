@@ -1,16 +1,30 @@
 {
-  "FileVersion": 3,
-  "Version": 1,
-  "VersionName": "1.0",
-  "FriendlyName": "UE52VFX Crow & Snowman",
-  "Description": "Crow sitting on snowman + flight logic, blueprintable. Includes ACrowActor, ASnowmanActor, ACrowTrigger with editable parameters, sound cues and attenuation.",
-  "Category": "Gameplay",
-  "Tags": [],
-  "EnabledByDefault": true,
-  "DependsOn": [
-    "Core",
-    "CoreUObject",
-    "Engine",
-    "InputCore"
-  ]
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "UE52VFX Crow & Snowman",
+	"Description": "Crow sitting on a snowman that caws and flies away when the player approaches. Blueprintable C++ actors with editable parameters: activation radius, delay, flight speed, animation slots, sound cues and attenuation.",
+	"Category": "Gameplay",
+	"CreatedBy": "",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "UE52VFX",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		}
+	]
 }
